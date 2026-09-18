@@ -1,0 +1,99 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: handoff-postgres
+    environment:
+      POSTGRES_USER: handoff
+      POSTGRES_PASSWORD: handoff
+      POSTGRES_DB: handoff
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U handoff"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.python
+    container_name: handoff-api
+    command: >
+      sh -c "python scripts/seed_corpus.py --reset &&
+             uvicorn src.api.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://handoff:handoff@postgres:5432/handoff
+      SCHEDULER_ENABLED: "false"
+      EMBEDDER_BACKEND: tfidf_svd
+    ports:
+      - "8000:8000"
+    volumes:
+      - appdata:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/api/status')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  node-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.node
+    container_name: handoff-node
+    environment:
+      PYTHON_API_URL: http://api:8000
+      PORT: "3001"
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.python
+    container_name: handoff-dashboard
+    command: >
+      streamlit run dashboard/app.py
+      --server.port=8501 --server.address=0.0.0.0
+      --server.headless=true
+    environment:
+      DATABASE_URL: postgresql+psycopg2://handoff:handoff@postgres:5432/handoff
+      PYTHON_API_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    volumes:
+      - appdata:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.python
+    container_name: handoff-scheduler
+    command: python -m src.monitoring.scheduler
+    environment:
+      DATABASE_URL: postgresql+psycopg2://handoff:handoff@postgres:5432/handoff
+      SCHEDULER_ENABLED: "true"
+      HEALTH_CHECK_INTERVAL_MINUTES: "60"
+    volumes:
+      - appdata:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  appdata:

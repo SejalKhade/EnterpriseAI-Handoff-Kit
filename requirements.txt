@@ -1,0 +1,30 @@
+# Core
+streamlit>=1.32.0
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+
+# Data and persistence
+sqlalchemy>=2.0.0
+chromadb>=0.4.24
+scikit-learn>=1.4.0
+numpy>=1.26.0
+
+# Scheduling
+apscheduler>=3.10.0
+
+# LLM
+anthropic>=0.25.0
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0
+httpx>=0.27.0
+
+# Optional connectors. Install to enable live writes.
+# snowflake-connector-python>=3.7.0
+# boto3>=1.34.0
+
+# Optional transformer embeddings. Requires torch, roughly 2 GB.
+# Enable with EMBEDDER_BACKEND=sentence_transformers
+# sentence-transformers>=2.5.0
