@@ -10,6 +10,11 @@ chromadb>=0.4.24
 scikit-learn>=1.4.0
 numpy>=1.26.0
 
+# ChromaDB needs SQLite 3.35+. Streamlit Community Cloud and Hugging Face
+# Spaces ship an older system sqlite3, so swap in this wheel there. No Windows
+# wheel is published, so the marker keeps local Windows installs unaffected.
+pysqlite3-binary>=0.5.0; sys_platform == "linux"
+
 # Scheduling
 apscheduler>=3.10.0
 

@@ -5,8 +5,18 @@ No emojis. Nothing inferred that is not computed.
 """
 
 from __future__ import annotations
-import json
 import sys
+
+# ChromaDB needs SQLite 3.35+. Streamlit Community Cloud and Hugging Face
+# Spaces ship an older system sqlite3, so swap in pysqlite3-binary there.
+# No-op wherever it isn't installed (e.g. local Windows dev).
+try:
+    import pysqlite3
+    sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+except ImportError:
+    pass
+
+import json
 from pathlib import Path
 
 import streamlit as st
@@ -21,6 +31,26 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+
+def _ensure_seeded() -> None:
+    """Seed the bundled demo corpus on a fresh deployment.
+
+    A public deployment has no shell access to run scripts/seed_corpus.py,
+    and the container's filesystem is wiped on every cold start, so this
+    runs once per process instead of requiring a manual step.
+    """
+    from src.database.session import init_db
+    init_db()
+    pipeline = orchestrator.get_pipeline()
+    if pipeline.store.count() == 0:
+        with st.spinner("Seeding demo corpus (first run only)..."):
+            from scripts.seed_corpus import seed
+            seed(reset=False)
+        orchestrator.reset_pipeline_cache()
+
+
+_ensure_seeded()
 
 st.markdown("""
 <style>

@@ -129,6 +129,16 @@ SQLAlchemy eval       S3             hallucination guard
 - Node.js 18+
 - Docker and Docker Compose (only needed for the containerized stack)
 
+## Live demo
+
+Deployable to [Streamlit Community Cloud](https://share.streamlit.io) with
+zero configuration: point it at this repo, main file path
+`dashboard/app.py`. The dashboard seeds the bundled ten-document corpus
+automatically on first load, so "Run health check" works immediately with no
+shell access needed. Snowflake and S3 are unconfigured there, so those writes
+fall back to local files, exactly as described in
+[Optional integrations](#optional-integrations).
+
 ## Running it
 
 ```bash
